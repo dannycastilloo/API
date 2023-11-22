@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using API.Models;
+using System.Diagnostics;
 
 namespace API.Controllers
 {
@@ -95,22 +96,35 @@ namespace API.Controllers
             return CreatedAtAction("GetCourse", new { id = course.CourseId }, course);
         }
 
-        // DELETE: api/Courses/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCourse(int id)
+        // PUT: api/Courses/5
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPut("{id}")]
+        public async Task<IActionResult> LogicDeleteCourse(int id, Course course)
         {
-            if (_context.Course == null)
+            if (id != course.CourseId)
             {
-                return NotFound();
-            }
-            var course = await _context.Course.FindAsync(id);
-            if (course == null)
-            {
-                return NotFound();
+                return BadRequest();
             }
 
-            _context.Course.Remove(course);
-            await _context.SaveChangesAsync();
+            course.isActive = false;
+
+            _context.Entry(course).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!CourseExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
 
             return NoContent();
         }

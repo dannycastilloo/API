@@ -95,22 +95,34 @@ namespace API.Controllers
             return CreatedAtAction("GetGrade", new { id = grade.GradeId }, grade);
         }
 
-        // DELETE: api/Grades/5
+        // LOGIC DELETE: api/Grades/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteGrade(int id)
+        public async Task<IActionResult> LogicDeleteGrade(int id, Grade grade, bool isActive)
         {
-            if (_context.Grades == null)
+            if (id != grade.GradeId)
             {
-                return NotFound();
-            }
-            var grade = await _context.Grades.FindAsync(id);
-            if (grade == null)
-            {
-                return NotFound();
+                return BadRequest();
             }
 
-            _context.Grades.Remove(grade);
-            await _context.SaveChangesAsync();
+            grade.isActive = false;
+
+            _context.Entry(grade).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!GradeExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
 
             return NoContent();
         }
