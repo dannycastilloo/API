@@ -49,6 +49,24 @@ namespace API.Controllers
             return student;
         }
 
+        // GET BY NAME & GRADE: api/Students/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Student>> GetStudentByNameAndGrade(int id)
+        {
+            if (_context.Students == null)
+            {
+                return NotFound();
+            }
+            var student = await _context.Students.FindAsync(id);
+
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            return student;
+        }
+
         // PUT: api/Students/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
