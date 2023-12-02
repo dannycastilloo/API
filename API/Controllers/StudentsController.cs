@@ -99,18 +99,32 @@ namespace API.Controllers
         }
 
         // POST: api/Students
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Student>> PostStudent(Student student)
         {
-          if (_context.Students == null)
-          {
-              return Problem("Entity set 'SchoolContext.Students'  is null.");
-          }
-            _context.Students.Add(student);
+            if (student == null || string.IsNullOrWhiteSpace(student.FirstName))
+            {
+                return BadRequest("Name is required.");
+            }
+
+            var newStudent = new Student
+            {
+                FirstName = student.FirstName,
+                LastName = student.LastName,
+                Phone = student.Phone,
+                Email = student.Email,
+                GradeId = student.GradeId
+            };
+
+            if (_context.Students == null)
+            {
+                return Problem("Entity set 'SchoolContext.Student' is null.");
+            }
+
+            _context.Students.Add(newStudent);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetStudent", new { id = student.StudentId }, student);
+            return CreatedAtAction("GetStudent", new { id = newStudent.StudentId }, newStudent);
         }
 
         // DELETE: api/Students/5
@@ -132,6 +146,110 @@ namespace API.Controllers
 
             return NoContent();
         }
+
+        // UPDATE PERSONAL DATA
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutStudentPersonalData(int id, Student student)
+        {
+            if (id != student.StudentId)
+            {
+                return BadRequest();
+            }
+
+            var existingStudent = await _context.Students.FindAsync(id);
+
+            if (existingStudent == null)
+            {
+                return NotFound();
+            }
+
+            existingStudent.FirstName = student.FirstName;
+            existingStudent.LastName = student.LastName;
+            _context.Entry(existingStudent).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!StudentExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            return NoContent();
+        }
+
+        // UPDATE CONTACT
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutStudentContact(int id, Student student)
+        {
+            if (id != student.StudentId)
+            {
+                return BadRequest();
+            }
+
+            var existingStudent = await _context.Students.FindAsync(id);
+
+            if (existingStudent == null)
+            {
+                return NotFound();
+            }
+
+            existingStudent.Phone = student.Phone;
+            existingStudent.Email = student.Email;
+            _context.Entry(existingStudent).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!StudentExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            return NoContent();
+        }
+
+        // POST
+        [HttpPost]
+        public async Task<ActionResult<IEnumerable<Student>>> PostStudentsByGrade(StudentByGradeRequest request)
+        {
+            if (request == null || request.Students == null || request.Students.Count == 0)
+            {
+                return BadRequest("Invalid request. Please provide students and a grade ID.");
+            }
+
+            var grade = await _context.Grades.FindAsync(request.IdGrade);
+            if (grade == null)
+            {
+                return NotFound("Grade not found.");
+            }
+
+            foreach (var student in request.Students)
+            {
+                student.GradeId = request.IdGrade;
+                _context.Students.Add(student);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetStudents", request.Students);
+        }
+
+
 
         private bool StudentExists(int id)
         {

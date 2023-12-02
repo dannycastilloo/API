@@ -14,6 +14,7 @@ namespace API.Controllers
         public DbSet<Grade> Enrollments { get; set; }
         public DbSet<Grade> Courses { get; set; }
         public DbSet<API.Models.Course>? Course { get; set; }
+        public DbSet<API.Models.Enrollment>? Enrollment { get; set; }
 
     }
 }

@@ -82,18 +82,29 @@ namespace API.Controllers
         }
 
         // POST: api/Courses
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Course>> PostCourse(Course course)
         {
-          if (_context.Course == null)
-          {
-              return Problem("Entity set 'SchoolContext.Course'  is null.");
-          }
-            _context.Course.Add(course);
+            if (course == null || string.IsNullOrWhiteSpace(course.Name))
+            {
+                return BadRequest("Name is required.");
+            }
+
+            var newCourse = new Course
+            {
+                Name = course.Name,
+                Credit = course.Credit
+            };
+
+            if (_context.Course == null)
+            {
+                return Problem("Entity set 'SchoolContext.Course' is null.");
+            }
+
+            _context.Course.Add(newCourse);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetCourse", new { id = course.CourseId }, course);
+            return CreatedAtAction("GetCourse", new { id = newCourse.CourseId }, newCourse);
         }
 
         // PUT: api/Courses/5
@@ -125,6 +136,62 @@ namespace API.Controllers
                     throw;
                 }
             }
+
+            return NoContent();
+        }
+
+        // LOGIC DELETE
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> LogicDeleteCourse(int id, Course course, bool isActive)
+        {
+            if (id != course.CourseId)
+            {
+                return BadRequest();
+            }
+
+            course.isActive = false;
+
+            _context.Entry(course).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!CourseExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
+        // DELETE
+        [HttpDelete]
+        public async Task<IActionResult> DeleteCourses(DeleteCoursesRequest request)
+        {
+            if (request == null || request.Courses == null || request.Courses.Count == 0)
+            {
+                return BadRequest("Invalid request. Please provide a list of courses to delete.");
+            }
+
+            foreach (var course in request.Courses)
+            {
+                var existingCourse = await _context.Courses.FindAsync(course.CourseId);
+
+                if (existingCourse != null)
+                {
+                    existingCourse.isActive = false;
+                }
+            }
+
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }

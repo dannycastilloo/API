@@ -81,18 +81,29 @@ namespace API.Controllers
         }
 
         // POST: api/Grades
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Grade>> PostGrade(Grade grade)
         {
-          if (_context.Grades == null)
-          {
-              return Problem("Entity set 'SchoolContext.Grades'  is null.");
-          }
-            _context.Grades.Add(grade);
+            if (grade == null || string.IsNullOrWhiteSpace(grade.Name))
+            {
+                return BadRequest("Name is required.");
+            }
+
+            var newGrade = new Grade
+            {
+                Name = grade.Name,
+                Description = grade.Description
+            };
+
+            if (_context.Grades == null)
+            {
+                return Problem("Entity set 'SchoolContext.Grade' is null.");
+            }
+
+            _context.Grades.Add(newGrade);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetGrade", new { id = grade.GradeId }, grade);
+            return CreatedAtAction("GetGrade", new { id = newGrade.GradeId }, newGrade);
         }
 
         // LOGIC DELETE: api/Grades/5
